@@ -410,7 +410,43 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 		}
 
 	default:
-		return ErrTxTypeNotSupported
+		var itx UnknownTx
+		inner = &itx
+
+		if dec.Nonce != nil {
+			itx.Nonce = uint64(*dec.Nonce)
+		}
+		if dec.To != nil {
+			itx.To = dec.To
+		}
+		if dec.Gas != nil {
+			itx.Gas = uint64(*dec.Gas)
+		}
+		if dec.GasPrice != nil {
+			itx.GasPrice = (*big.Int)(dec.GasPrice)
+		}
+		if dec.Value != nil {
+			itx.Value = (*big.Int)(dec.Value)
+		}
+		if dec.Input != nil {
+			itx.Data = *dec.Input
+		}
+
+		if dec.R != nil {
+			itx.R = (*big.Int)(dec.R)
+		}
+		if dec.S != nil {
+			itx.S = (*big.Int)(dec.S)
+		}
+		if dec.V != nil {
+			itx.V = (*big.Int)(dec.V)
+		}
+
+		if itx.V.Sign() != 0 || itx.R.Sign() != 0 || itx.S.Sign() != 0 {
+			if err := sanityCheckSignature(itx.V, itx.R, itx.S, true); err != nil {
+				return err
+			}
+		}
 	}
 
 	// Now set the inner transaction.
